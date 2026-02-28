@@ -110,7 +110,7 @@ def test_subaction_none_when_not_present(monkeypatch):
     def dummy_tool_without_action(ctx, name: str):
         return 123
 
-    wrapped = td.telemetry_tool("apply_text_edits")(dummy_tool_without_action)
+    wrapped = td.telemetry_tool("manage_asset")(dummy_tool_without_action)
     _ = wrapped(None, name="X")
-    assert captured["tool_name"] == "apply_text_edits"
+    assert captured["tool_name"] == "manage_asset"
     assert captured["sub_action"] is None

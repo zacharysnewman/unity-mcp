@@ -673,48 +673,6 @@ class TestMaterialCommands:
 
 
 # =============================================================================
-# Script Command Tests
-# =============================================================================
-
-class TestScriptCommands:
-    """Tests for Script CLI commands."""
-
-    def test_script_create(self, runner, mock_unity_response):
-        """Test script create command."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(
-                cli, ["script", "create", "PlayerController"])
-            assert result.exit_code == 0
-
-    def test_script_create_with_options(self, runner, mock_unity_response):
-        """Test script create with options."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(cli, [
-                "script", "create", "EnemyData",
-                "--type", "ScriptableObject",
-                "--namespace", "MyGame"
-            ])
-            assert result.exit_code == 0
-
-    def test_script_read(self, runner):
-        """Test script read command."""
-        mock_response = {
-            "success": True,
-            "data": {"content": "using UnityEngine;\n\npublic class Test {}"}
-        }
-        with patch("cli.commands.script.run_command", return_value=mock_response):
-            result = runner.invoke(
-                cli, ["script", "read", "Assets/Scripts/Test.cs"])
-            assert result.exit_code == 0
-
-    def test_script_delete(self, runner, mock_unity_response):
-        """Test script delete command."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(
-                cli, ["script", "delete", "Assets/Scripts/Old.cs", "--force"])
-            assert result.exit_code == 0
-
-
 # =============================================================================
 # Global Options Tests
 # =============================================================================

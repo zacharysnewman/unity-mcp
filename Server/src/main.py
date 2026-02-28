@@ -283,7 +283,7 @@ Resources vs Tools:
 - Always check related resources before modifying the engine state with tools
 
 Script Management:
-- After creating or modifying scripts (by your own tools or the `manage_script` tool) use `read_console` to check for compilation errors before proceeding
+- After creating or modifying scripts use `read_console` to check for compilation errors before proceeding
 - Only after successful compilation can new components/types be used
 - You can poll the `editor_state` resource's `isCompiling` field to check if the domain reload is complete
 

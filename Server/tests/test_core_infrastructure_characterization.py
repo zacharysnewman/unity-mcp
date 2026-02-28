@@ -514,18 +514,18 @@ class TestTelemetrySubAction:
 
     def test_telemetry_tool_extracts_action_parameter(self):
         """Verify telemetry_tool extracts 'action' parameter as sub_action."""
-        @telemetry_tool("manage_script")
+        @telemetry_tool("manage_scene")
         def tool_with_action(name, action=None):
             return f"result_{action}"
 
         with patch("core.telemetry_decorator.record_tool_usage") as mock_record:
-            result = tool_with_action("test", action="create")
+            result = tool_with_action("test", action="save")
 
-            assert result == "result_create"
+            assert result == "result_save"
             # sub_action should be extracted from parameters
             assert mock_record.called
             call_kwargs = mock_record.call_args[1]
-            assert call_kwargs.get("sub_action") == "create"
+            assert call_kwargs.get("sub_action") == "save"
 
     def test_telemetry_tool_missing_action_parameter(self):
         """Verify telemetry_tool handles missing action parameter gracefully."""
@@ -540,22 +540,6 @@ class TestTelemetrySubAction:
             assert mock_record.called
             call_kwargs = mock_record.call_args[1]
             assert call_kwargs.get("sub_action") is None
-
-    def test_telemetry_tool_milestone_on_script_create(self):
-        """Verify telemetry_tool records FIRST_SCRIPT_CREATION milestone."""
-        @telemetry_tool("manage_script")
-        def create_script(name, action=None):
-            return "created"
-
-        with patch("core.telemetry_decorator.record_milestone") as mock_milestone:
-            result = create_script("test", action="create")
-
-            assert result == "created"
-            # Should record FIRST_SCRIPT_CREATION milestone
-            assert mock_milestone.called
-            milestone_calls = [c for c in mock_milestone.call_args_list
-                             if "FIRST_SCRIPT_CREATION" in str(c)]
-            assert len(milestone_calls) > 0
 
     def test_telemetry_tool_milestone_on_scene_modification(self):
         """Verify telemetry_tool records FIRST_SCENE_MODIFICATION milestone."""
@@ -1075,12 +1059,12 @@ class TestTelemetryRecordTypes:
             mock_collector = MagicMock()
             mock_get.return_value = mock_collector
 
-            record_tool_usage("manage_script", True, 75.0, sub_action="create")
+            record_tool_usage("manage_scene", True, 75.0, sub_action="save")
 
             call_args = mock_collector.record.call_args
             data = call_args[0][1]
 
-            assert data["sub_action"] == "create"
+            assert data["sub_action"] == "save"
 
     def test_record_resource_usage_basic(self):
         """Verify record_resource_usage creates proper data structure."""

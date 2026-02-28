@@ -43,11 +43,9 @@ from core.config import config
 def _tool_registry_for_visibility_tests() -> list[dict]:
     return [
         {"name": "manage_scene", "unity_target": "manage_scene"},
-        {"name": "manage_script", "unity_target": "manage_script"},
         {"name": "manage_asset", "unity_target": "manage_asset"},
-        {"name": "create_script", "unity_target": "manage_script"},
         {"name": "find_in_file", "unity_target": "manage_script"},
-        {"name": "script_apply_edits", "unity_target": "manage_script"},
+        {"name": "validate_script", "unity_target": "manage_script"},
         {"name": "set_active_instance", "unity_target": None},
         {"name": "execute_custom_tool", "unity_target": None},
     ]
@@ -286,7 +284,7 @@ class TestUnityInstanceMiddlewareInjection:
         """
         Current behavior: in HTTP mode with a connected Unity session, on_list_tools()
         uses PluginHub-registered tool names to hide disabled Unity tools while keeping
-        server-only tools visible. Aliases like create_script follow manage_script state.
+        server-only tools visible. Aliases like validate_script follow manage_script state.
         """
         middleware = UnityInstanceMiddleware()
         middleware_ctx = Mock()
@@ -297,10 +295,9 @@ class TestUnityInstanceMiddlewareInjection:
 
         available_tools = [
             SimpleNamespace(name="manage_scene"),
-            SimpleNamespace(name="manage_script"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="create_script"),
+            SimpleNamespace(name="validate_script"),
         ]
 
         async def call_next(_ctx):
@@ -330,7 +327,7 @@ class TestUnityInstanceMiddlewareInjection:
 
         names = [tool.name for tool in filtered]
         assert "manage_scene" in names
-        assert "create_script" in names
+        assert "validate_script" in names
         assert "set_active_instance" in names
         assert "manage_asset" not in names
 
@@ -352,7 +349,7 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="create_script"),
+            SimpleNamespace(name="validate_script"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="custom_server_tool"),
         ]
@@ -384,7 +381,7 @@ class TestUnityInstanceMiddlewareInjection:
         # All tools should be visible when register_tools hasn't been sent yet
         assert "manage_scene" in names
         assert "manage_asset" in names
-        assert "create_script" in names
+        assert "validate_script" in names
         assert "set_active_instance" in names
         assert "custom_server_tool" in names
 
@@ -405,7 +402,7 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="create_script"),
+            SimpleNamespace(name="validate_script"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="custom_server_tool"),
         ]
@@ -442,7 +439,7 @@ class TestUnityInstanceMiddlewareInjection:
         assert "custom_server_tool" in names
         assert "manage_scene" not in names
         assert "manage_asset" not in names
-        assert "create_script" not in names
+        assert "validate_script" not in names
 
     @pytest.mark.asyncio
     async def test_list_tools_skips_filter_when_enabled_set_lookup_fails(self, mock_context, monkeypatch):
@@ -578,8 +575,7 @@ class TestUnityInstanceMiddlewareInjection:
 
         original_tools = [
             SimpleNamespace(name="manage_scene"),
-            SimpleNamespace(name="manage_script"),
-            SimpleNamespace(name="create_script"),
+            SimpleNamespace(name="validate_script"),
             SimpleNamespace(name="set_active_instance"),
         ]
 
@@ -601,7 +597,7 @@ class TestUnityInstanceMiddlewareInjection:
                                     )
                                 }
                             )
-                            # manage_script is disabled; alias create_script should also be hidden.
+                            # manage_script is disabled; alias validate_script should also be hidden.
                             mock_get_tools.return_value = [SimpleNamespace(name="manage_scene")]
 
                             filtered = await middleware.on_list_tools(middleware_ctx, call_next)
@@ -609,8 +605,7 @@ class TestUnityInstanceMiddlewareInjection:
         names = [tool.name for tool in filtered]
         assert "manage_scene" in names
         assert "set_active_instance" in names
-        assert "manage_script" not in names
-        assert "create_script" not in names
+        assert "validate_script" not in names
 
     @pytest.mark.asyncio
     async def test_list_tools_keeps_all_visible_when_tool_registry_is_empty(self, mock_context, monkeypatch):
@@ -662,7 +657,7 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="manage_script"),
+            SimpleNamespace(name="validate_script"),
         ]
 
         async def call_next(_ctx):
@@ -703,7 +698,7 @@ class TestUnityInstanceMiddlewareInjection:
         names = [tool.name for tool in filtered]
         assert "manage_scene" in names
         assert "manage_asset" in names
-        assert "manage_script" not in names
+        assert "validate_script" not in names
 
 
 # ============================================================================

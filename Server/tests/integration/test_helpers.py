@@ -82,7 +82,6 @@ def setup_script_tools():
 
     for tool_info in get_registered_tools():
         name = tool_info['name']
-        if any(k in name for k in ['script', 'apply_text', 'create_script',
-                                    'delete_script', 'validate_script', 'get_sha']):
+        if name == 'validate_script':
             mcp.tools[name] = tool_info['func']
     return mcp.tools
