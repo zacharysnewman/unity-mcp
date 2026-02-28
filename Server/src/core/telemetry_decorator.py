@@ -38,7 +38,6 @@ def telemetry_tool(tool_name: str):
                     _decorator_log_count += 1
                 result = func(*args, **kwargs)
                 success = True
-                action_val = sub_action or kwargs.get("action")
                 try:
                     if tool_name.startswith("manage_scene"):
                         record_milestone(
@@ -79,7 +78,6 @@ def telemetry_tool(tool_name: str):
                     _decorator_log_count += 1
                 result = await func(*args, **kwargs)
                 success = True
-                action_val = sub_action or kwargs.get("action")
                 try:
                     if tool_name.startswith("manage_scene"):
                         record_milestone(

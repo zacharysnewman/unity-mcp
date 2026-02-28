@@ -77,7 +77,7 @@ def setup_script_tools():
     """
     mcp = DummyMCP()
     # Import tools to trigger decorator-based registration
-    import services.tools.manage_script
+    import services.tools.validate_script
     from services.registry import get_registered_tools
 
     for tool_info in get_registered_tools():
