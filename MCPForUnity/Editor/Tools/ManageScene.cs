@@ -53,7 +53,6 @@ namespace MCPForUnity.Editor.Tools
             public int? cursor { get; set; }
             public int? maxNodes { get; set; }
             public int? maxDepth { get; set; }
-            public int? maxChildrenPerNode { get; set; }
             public bool? includeTransform { get; set; }
         }
 
@@ -119,7 +118,6 @@ namespace MCPForUnity.Editor.Tools
                 cursor = ParamCoercion.CoerceIntNullable(p["cursor"]),
                 maxNodes = ParamCoercion.CoerceIntNullable(p["maxNodes"] ?? p["max_nodes"]),
                 maxDepth = ParamCoercion.CoerceIntNullable(p["maxDepth"] ?? p["max_depth"]),
-                maxChildrenPerNode = ParamCoercion.CoerceIntNullable(p["maxChildrenPerNode"] ?? p["max_children_per_node"]),
                 includeTransform = ParamCoercion.CoerceBoolNullable(p["includeTransform"] ?? p["include_transform"]),
             };
         }
