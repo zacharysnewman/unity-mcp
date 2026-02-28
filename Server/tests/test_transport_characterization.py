@@ -44,7 +44,6 @@ def _tool_registry_for_visibility_tests() -> list[dict]:
     return [
         {"name": "manage_scene", "unity_target": "manage_scene"},
         {"name": "manage_asset", "unity_target": "manage_asset"},
-        {"name": "find_in_file", "unity_target": "manage_script"},
         {"name": "set_active_instance", "unity_target": None},
         {"name": "execute_custom_tool", "unity_target": None},
     ]
@@ -283,7 +282,7 @@ class TestUnityInstanceMiddlewareInjection:
         """
         Current behavior: in HTTP mode with a connected Unity session, on_list_tools()
         uses PluginHub-registered tool names to hide disabled Unity tools while keeping
-        server-only tools visible. Aliases like find_in_file follow manage_script state.
+        server-only tools visible.
         """
         middleware = UnityInstanceMiddleware()
         middleware_ctx = Mock()
@@ -296,7 +295,6 @@ class TestUnityInstanceMiddlewareInjection:
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="find_in_file"),
         ]
 
         async def call_next(_ctx):
@@ -319,14 +317,12 @@ class TestUnityInstanceMiddlewareInjection:
                             )
                             mock_get_tools.return_value = [
                                 SimpleNamespace(name="manage_scene"),
-                                SimpleNamespace(name="manage_script"),
                             ]
 
                             filtered = await middleware.on_list_tools(middleware_ctx, call_next)
 
         names = [tool.name for tool in filtered]
         assert "manage_scene" in names
-        assert "find_in_file" in names
         assert "set_active_instance" in names
         assert "manage_asset" not in names
 
@@ -348,7 +344,6 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="find_in_file"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="custom_server_tool"),
         ]
@@ -380,7 +375,6 @@ class TestUnityInstanceMiddlewareInjection:
         # All tools should be visible when register_tools hasn't been sent yet
         assert "manage_scene" in names
         assert "manage_asset" in names
-        assert "find_in_file" in names
         assert "set_active_instance" in names
         assert "custom_server_tool" in names
 
@@ -401,7 +395,6 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="find_in_file"),
             SimpleNamespace(name="set_active_instance"),
             SimpleNamespace(name="custom_server_tool"),
         ]
@@ -438,7 +431,6 @@ class TestUnityInstanceMiddlewareInjection:
         assert "custom_server_tool" in names
         assert "manage_scene" not in names
         assert "manage_asset" not in names
-        assert "find_in_file" not in names
 
     @pytest.mark.asyncio
     async def test_list_tools_skips_filter_when_enabled_set_lookup_fails(self, mock_context, monkeypatch):
@@ -572,9 +564,14 @@ class TestUnityInstanceMiddlewareInjection:
         mock_context.set_state("unity_instance", "Project@abc123")
         monkeypatch.setattr(config, "transport_mode", "http")
 
+        # Use a local registry with a synthetic alias to test alias-hiding behavior
+        registry_with_alias = _tool_registry_for_visibility_tests() + [
+            {"name": "scene_alias", "unity_target": "manage_scene"},
+        ]
+
         original_tools = [
             SimpleNamespace(name="manage_scene"),
-            SimpleNamespace(name="find_in_file"),
+            SimpleNamespace(name="scene_alias"),
             SimpleNamespace(name="set_active_instance"),
         ]
 
@@ -583,7 +580,7 @@ class TestUnityInstanceMiddlewareInjection:
 
         with patch.object(middleware, "_inject_unity_instance", new=AsyncMock()):
             with patch("transport.unity_instance_middleware.PluginHub.is_configured", return_value=True):
-                with patch("transport.unity_instance_middleware.get_registered_tools", return_value=_tool_registry_for_visibility_tests()):
+                with patch("transport.unity_instance_middleware.get_registered_tools", return_value=registry_with_alias):
                     with patch("transport.unity_instance_middleware.PluginHub.get_sessions", new_callable=AsyncMock) as mock_get_sessions:
                         with patch("transport.unity_instance_middleware.PluginHub.get_tools_for_project", new_callable=AsyncMock) as mock_get_tools:
                             mock_get_sessions.return_value = SessionList(
@@ -596,15 +593,16 @@ class TestUnityInstanceMiddlewareInjection:
                                     )
                                 }
                             )
-                            # manage_script is disabled; alias find_in_file should also be hidden.
-                            mock_get_tools.return_value = [SimpleNamespace(name="manage_scene")]
+                            # manage_scene is disabled; scene_alias should also be hidden.
+                            # Non-empty list signals registration was sent (empty would defer filtering).
+                            mock_get_tools.return_value = [SimpleNamespace(name="manage_asset")]
 
                             filtered = await middleware.on_list_tools(middleware_ctx, call_next)
 
         names = [tool.name for tool in filtered]
-        assert "manage_scene" in names
         assert "set_active_instance" in names
-        assert "find_in_file" not in names
+        assert "manage_scene" not in names
+        assert "scene_alias" not in names
 
     @pytest.mark.asyncio
     async def test_list_tools_keeps_all_visible_when_tool_registry_is_empty(self, mock_context, monkeypatch):
@@ -656,7 +654,6 @@ class TestUnityInstanceMiddlewareInjection:
         original_tools = [
             SimpleNamespace(name="manage_scene"),
             SimpleNamespace(name="manage_asset"),
-            SimpleNamespace(name="find_in_file"),
         ]
 
         async def call_next(_ctx):
@@ -697,7 +694,6 @@ class TestUnityInstanceMiddlewareInjection:
         names = [tool.name for tool in filtered]
         assert "manage_scene" in names
         assert "manage_asset" in names
-        assert "find_in_file" not in names
 
 
 # ============================================================================
