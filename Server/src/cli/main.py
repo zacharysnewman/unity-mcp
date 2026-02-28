@@ -248,7 +248,6 @@ def register_commands():
         ("cli.commands.component", "component"),
         ("cli.commands.scene", "scene"),
         ("cli.commands.asset", "asset"),
-        ("cli.commands.script", "script"),
         ("cli.commands.code", "code"),
         ("cli.commands.editor", "editor"),
         ("cli.commands.prefab", "prefab"),
