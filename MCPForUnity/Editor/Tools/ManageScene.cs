@@ -18,6 +18,8 @@ namespace MCPForUnity.Editor.Tools
     [McpForUnityTool("manage_scene", AutoRegister = false)]
     public static class ManageScene
     {
+        private const int DefaultChildrenPageSize = 200;
+
         private sealed class SceneCommand
         {
             public string action { get; set; } = string.Empty;
@@ -630,7 +632,6 @@ namespace MCPForUnity.Editor.Tools
                 int resolvedCursor = Mathf.Max(0, cmd.cursor ?? 0);
                 int resolvedMaxNodes = Mathf.Clamp(cmd.maxNodes ?? 1000, 1, 5000);
                 int effectiveTake = Mathf.Min(resolvedPageSize, resolvedMaxNodes);
-                int resolvedMaxChildrenPerNode = Mathf.Clamp(cmd.maxChildrenPerNode ?? 200, 0, 2000);
                 bool includeTransform = cmd.includeTransform ?? false;
 
                 // NOTE: maxDepth is accepted for forward-compatibility, but current paging mode
@@ -670,20 +671,26 @@ namespace MCPForUnity.Editor.Tools
                 {
                     var go = nodes[i];
                     if (go == null) continue;
-                    items.Add(BuildGameObjectSummary(go, includeTransform, resolvedMaxChildrenPerNode));
+                    items.Add(BuildGameObjectSummary(go, includeTransform));
                 }
 
                 bool truncated = end < total;
                 string nextCursor = truncated ? end.ToString() : null;
 
+                // scopePath is the full path of the parent (empty string for roots).
+                // Full path of any item: scopePath.Length > 0 ? scopePath + "/" + item.name : item.name
+                string scopePath = parentGo != null ? GetGameObjectPath(parentGo) : string.Empty;
+
                 var payload = new
                 {
                     scope = scope,
+                    scopePath = scopePath,
                     cursor = resolvedCursor,
                     pageSize = effectiveTake,
                     next_cursor = nextCursor,
                     truncated = truncated,
                     total = total,
+                    childrenPageSizeDefault = DefaultChildrenPageSize,
                     items = items,
                 };
 
@@ -754,34 +761,12 @@ namespace MCPForUnity.Editor.Tools
             return null;
         }
 
-        private static object BuildGameObjectSummary(GameObject go, bool includeTransform, int maxChildrenPerNode)
+        private static object BuildGameObjectSummary(GameObject go, bool includeTransform)
         {
             if (go == null) return null;
 
             int childCount = 0;
             try { childCount = go.transform != null ? go.transform.childCount : 0; } catch { }
-            bool childrenTruncated = childCount > 0; // We do not inline children in summary mode.
-
-            // Get component type names (lightweight - no full serialization)
-            var componentTypes = new List<string>();
-            try
-            {
-                var components = go.GetComponents<Component>();
-                if (components != null)
-                {
-                    foreach (var c in components)
-                    {
-                        if (c != null)
-                        {
-                            componentTypes.Add(c.GetType().Name);
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                McpLog.Debug($"[ManageScene] Failed to enumerate components for '{go.name}': {ex.Message}");
-            }
 
             var d = new Dictionary<string, object>
             {
@@ -792,12 +777,9 @@ namespace MCPForUnity.Editor.Tools
                 { "tag", go.tag },
                 { "layer", go.layer },
                 { "isStatic", go.isStatic },
-                { "path", GetGameObjectPath(go) },
                 { "childCount", childCount },
-                { "childrenTruncated", childrenTruncated },
+                { "childrenTruncated", childCount > 0 }, // We do not inline children in summary mode.
                 { "childrenCursor", childCount > 0 ? "0" : null },
-                { "childrenPageSizeDefault", maxChildrenPerNode },
-                { "componentTypes", componentTypes },
             };
 
             if (includeTransform && go.transform != null)
