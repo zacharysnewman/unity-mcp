@@ -83,8 +83,8 @@ async def test_http_forwards_retry_on_reload(monkeypatch):
     result = await unity_transport.send_with_unity_instance(
         _unused_send_fn,
         None,
-        "manage_script",
-        {"action": "edit"},
+        "manage_scene",
+        {"action": "save"},
         retry_on_reload=False,
     )
 

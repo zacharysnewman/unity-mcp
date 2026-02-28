@@ -38,11 +38,8 @@ def telemetry_tool(tool_name: str):
                     _decorator_log_count += 1
                 result = func(*args, **kwargs)
                 success = True
-                action_val = sub_action or kwargs.get("action")
                 try:
-                    if tool_name == "manage_script" and action_val == "create":
-                        record_milestone(MilestoneType.FIRST_SCRIPT_CREATION)
-                    elif tool_name.startswith("manage_scene"):
+                    if tool_name.startswith("manage_scene"):
                         record_milestone(
                             MilestoneType.FIRST_SCENE_MODIFICATION)
                     record_milestone(MilestoneType.FIRST_TOOL_USAGE)
@@ -81,11 +78,8 @@ def telemetry_tool(tool_name: str):
                     _decorator_log_count += 1
                 result = await func(*args, **kwargs)
                 success = True
-                action_val = sub_action or kwargs.get("action")
                 try:
-                    if tool_name == "manage_script" and action_val == "create":
-                        record_milestone(MilestoneType.FIRST_SCRIPT_CREATION)
-                    elif tool_name.startswith("manage_scene"):
+                    if tool_name.startswith("manage_scene"):
                         record_milestone(
                             MilestoneType.FIRST_SCENE_MODIFICATION)
                     record_milestone(MilestoneType.FIRST_TOOL_USAGE)

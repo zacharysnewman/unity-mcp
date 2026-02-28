@@ -673,48 +673,6 @@ class TestMaterialCommands:
 
 
 # =============================================================================
-# Script Command Tests
-# =============================================================================
-
-class TestScriptCommands:
-    """Tests for Script CLI commands."""
-
-    def test_script_create(self, runner, mock_unity_response):
-        """Test script create command."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(
-                cli, ["script", "create", "PlayerController"])
-            assert result.exit_code == 0
-
-    def test_script_create_with_options(self, runner, mock_unity_response):
-        """Test script create with options."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(cli, [
-                "script", "create", "EnemyData",
-                "--type", "ScriptableObject",
-                "--namespace", "MyGame"
-            ])
-            assert result.exit_code == 0
-
-    def test_script_read(self, runner):
-        """Test script read command."""
-        mock_response = {
-            "success": True,
-            "data": {"content": "using UnityEngine;\n\npublic class Test {}"}
-        }
-        with patch("cli.commands.script.run_command", return_value=mock_response):
-            result = runner.invoke(
-                cli, ["script", "read", "Assets/Scripts/Test.cs"])
-            assert result.exit_code == 0
-
-    def test_script_delete(self, runner, mock_unity_response):
-        """Test script delete command."""
-        with patch("cli.commands.script.run_command", return_value=mock_unity_response):
-            result = runner.invoke(
-                cli, ["script", "delete", "Assets/Scripts/Old.cs", "--force"])
-            assert result.exit_code == 0
-
-
 # =============================================================================
 # Global Options Tests
 # =============================================================================
@@ -1123,72 +1081,6 @@ class TestEditorEnhancedCommands:
             result = runner.invoke(
                 cli, ["editor", "poll-test", "test-job-123"])
             assert result.exit_code == 0
-
-
-# =============================================================================
-# Code Search Tests
-# =============================================================================
-
-class TestCodeSearchCommand:
-    """Tests for code search command."""
-
-    def test_code_search(self, runner):
-        """Test code search."""
-        # Mock manage_script response with file contents
-        read_response = {
-            "status": "success",
-            "result": {
-                "success": True,
-                "data": {
-                    "contents": "using UnityEngine;\n\npublic class Player : MonoBehaviour\n{\n    void Start() {}\n}\n",
-                    "contentsEncoded": False,
-                }
-            }
-        }
-        with patch("cli.commands.code.run_command", return_value=read_response):
-            result = runner.invoke(
-                cli, ["code", "search", "class.*Player", "Assets/Scripts/Player.cs"])
-            assert result.exit_code == 0
-            assert "Line 3" in result.output
-            assert "class Player" in result.output
-
-    def test_code_search_no_matches(self, runner):
-        """Test code search with no matches."""
-        read_response = {
-            "status": "success",
-            "result": {
-                "success": True,
-                "data": {
-                    "contents": "using UnityEngine;\n\npublic class Test : MonoBehaviour {}\n",
-                    "contentsEncoded": False,
-                }
-            }
-        }
-        with patch("cli.commands.code.run_command", return_value=read_response):
-            result = runner.invoke(
-                cli, ["code", "search", "nonexistent", "Assets/Scripts/Test.cs"])
-            assert result.exit_code == 0
-            assert "No matches" in result.output
-
-    def test_code_search_with_options(self, runner):
-        """Test code search with options."""
-        read_response = {
-            "status": "success",
-            "result": {
-                "success": True,
-                "data": {
-                    "contents": "// TODO: implement this\n// FIXME: bug here\nclass Test {}\n",
-                    "contentsEncoded": False,
-                }
-            }
-        }
-        with patch("cli.commands.code.run_command", return_value=read_response):
-            result = runner.invoke(
-                cli, ["code", "search", "TODO", "Assets/Utils.cs", "--max-results", "100", "--case-sensitive"])
-            assert result.exit_code == 0
-            assert "Line 1" in result.output
-
-
 
 
 # =============================================================================

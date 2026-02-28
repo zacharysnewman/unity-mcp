@@ -320,10 +320,8 @@ class TestInstanceRoutingRaceConditions:
             assert state_storage.get("unity_instance") == instance
 
     @pytest.mark.asyncio
-    async def test_set_then_immediate_create_script(self):
-        """Setting instance then immediately creating script should route correctly."""
-        # This reproduces the bug: set_active_instance → create_script went to wrong instance
-
+    async def test_set_then_immediate_tool_call(self):
+        """Setting instance then immediately calling a tool should route correctly."""
         middleware = UnityInstanceMiddleware()
         ctx = Mock(spec=Context)
         ctx.session_id = "test-session"
@@ -338,57 +336,47 @@ class TestInstanceRoutingRaceConditions:
         # Set active instance
         middleware.set_active_instance(ctx, "ramble@8e29de57")
 
-        # Simulate middleware intercepting create_script call
+        # Simulate middleware intercepting a tool call
         middleware_ctx = Mock()
         middleware_ctx.fastmcp_context = ctx
 
-        async def mock_create_script_call(ctx):
-            # This simulates what create_script does
+        async def mock_tool_call(ctx):
             instance = get_unity_instance_from_context(ctx)
             return {"success": True, "routed_to": instance}
 
         # Inject state via middleware
-        await middleware.on_call_tool(middleware_ctx, mock_create_script_call)
+        await middleware.on_call_tool(middleware_ctx, mock_tool_call)
 
-        # Verify create_script would route to correct instance
-        result = await mock_create_script_call(ctx)
+        # Verify tool would route to correct instance
+        result = await mock_tool_call(ctx)
         assert result["routed_to"] == "ramble@8e29de57", \
-            "create_script must route to the instance set by set_active_instance"
+            "tool must route to the instance set by set_active_instance"
 
 
 class TestInstanceRoutingSequentialOperations:
     """Test the exact failure scenario from user report."""
 
     @pytest.mark.asyncio
-    async def test_four_script_creation_sequence(self):
+    async def test_four_sequential_tool_calls(self):
         """
         Reproduce the exact failure:
-        1. set_active(ramble) → create_script1 → should go to ramble
-        2. set_active(UnityMCPTests) → create_script2 → should go to UnityMCPTests
-        3. set_active(ramble) → create_script3 → should go to ramble
-        4. set_active(UnityMCPTests) → create_script4 → should go to UnityMCPTests
-
-        ACTUAL BEHAVIOR:
-        - Script1 went to UnityMCPTests (WRONG)
-        - Script2 went to ramble (WRONG)
-        - Script3 went to ramble (CORRECT)
-        - Script4 went to UnityMCPTests (CORRECT)
+        1. set_active(ramble) → tool1 → should go to ramble
+        2. set_active(UnityMCPTests) → tool2 → should go to UnityMCPTests
+        3. set_active(ramble) → tool3 → should go to ramble
+        4. set_active(UnityMCPTests) → tool4 → should go to UnityMCPTests
         """
         middleware = UnityInstanceMiddleware()
 
-        # Track which instance each script was created in
-        script_routes = {}
+        tool_routes = {}
 
-        async def simulate_create_script(ctx, script_name, expected_instance):
-            # Inject state via middleware
+        async def simulate_tool_call(ctx, tool_name, expected_instance):
             middleware_ctx = Mock()
             middleware_ctx.fastmcp_context = ctx
 
             async def mock_tool_call(middleware_ctx):
-                # The middleware passes the middleware_ctx, we need the fastmcp_context
                 tool_ctx = middleware_ctx.fastmcp_context
                 instance = get_unity_instance_from_context(tool_ctx)
-                script_routes[script_name] = instance
+                tool_routes[tool_name] = instance
                 return {"success": True}
 
             await middleware.on_call_tool(middleware_ctx, mock_tool_call)
@@ -406,26 +394,25 @@ class TestInstanceRoutingSequentialOperations:
 
         # Execute sequence
         middleware.set_active_instance(ctx, "ramble@8e29de57")
-        expected1 = await simulate_create_script(ctx, "Script1", "ramble@8e29de57")
+        expected1 = await simulate_tool_call(ctx, "Tool1", "ramble@8e29de57")
 
         middleware.set_active_instance(ctx, "UnityMCPTests@cc8756d4")
-        expected2 = await simulate_create_script(ctx, "Script2", "UnityMCPTests@cc8756d4")
+        expected2 = await simulate_tool_call(ctx, "Tool2", "UnityMCPTests@cc8756d4")
 
         middleware.set_active_instance(ctx, "ramble@8e29de57")
-        expected3 = await simulate_create_script(ctx, "Script3", "ramble@8e29de57")
+        expected3 = await simulate_tool_call(ctx, "Tool3", "ramble@8e29de57")
 
         middleware.set_active_instance(ctx, "UnityMCPTests@cc8756d4")
-        expected4 = await simulate_create_script(ctx, "Script4", "UnityMCPTests@cc8756d4")
+        expected4 = await simulate_tool_call(ctx, "Tool4", "UnityMCPTests@cc8756d4")
 
-        # Assertions - these will FAIL until the bug is fixed
-        assert script_routes.get("Script1") == expected1, \
-            f"Script1 should route to {expected1}, got {script_routes.get('Script1')}"
-        assert script_routes.get("Script2") == expected2, \
-            f"Script2 should route to {expected2}, got {script_routes.get('Script2')}"
-        assert script_routes.get("Script3") == expected3, \
-            f"Script3 should route to {expected3}, got {script_routes.get('Script3')}"
-        assert script_routes.get("Script4") == expected4, \
-            f"Script4 should route to {expected4}, got {script_routes.get('Script4')}"
+        assert tool_routes.get("Tool1") == expected1, \
+            f"Tool1 should route to {expected1}, got {tool_routes.get('Tool1')}"
+        assert tool_routes.get("Tool2") == expected2, \
+            f"Tool2 should route to {expected2}, got {tool_routes.get('Tool2')}"
+        assert tool_routes.get("Tool3") == expected3, \
+            f"Tool3 should route to {expected3}, got {tool_routes.get('Tool3')}"
+        assert tool_routes.get("Tool4") == expected4, \
+            f"Tool4 should route to {expected4}, got {tool_routes.get('Tool4')}"
 
 
 # Test regimen summary
