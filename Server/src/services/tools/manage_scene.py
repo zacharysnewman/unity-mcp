@@ -48,8 +48,6 @@ async def manage_scene(
                          "Hard cap on returned nodes per request (safety)."] | None = None,
     max_depth: Annotated[int | str,
                          "Accepted for forward-compatibility; current paging returns a single level."] | None = None,
-    max_children_per_node: Annotated[int | str,
-                                     "Child paging hint (safety)."] | None = None,
     include_transform: Annotated[bool | str,
                                  "If true, include local transform in node summaries."] | None = None,
 ) -> dict[str, Any]:
@@ -66,8 +64,6 @@ async def manage_scene(
         coerced_cursor = coerce_int(cursor, default=None)
         coerced_max_nodes = coerce_int(max_nodes, default=None)
         coerced_max_depth = coerce_int(max_depth, default=None)
-        coerced_max_children_per_node = coerce_int(
-            max_children_per_node, default=None)
         coerced_include_transform = coerce_bool(
             include_transform, default=None)
 
@@ -94,8 +90,6 @@ async def manage_scene(
             params["maxNodes"] = coerced_max_nodes
         if coerced_max_depth is not None:
             params["maxDepth"] = coerced_max_depth
-        if coerced_max_children_per_node is not None:
-            params["maxChildrenPerNode"] = coerced_max_children_per_node
         if coerced_include_transform is not None:
             params["includeTransform"] = coerced_include_transform
 
