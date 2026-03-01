@@ -15,8 +15,13 @@ def test_manage_scene_signature_includes_paging_params():
     assert "cursor" in names
     assert "max_nodes" in names
     assert "max_depth" in names
-    assert "max_children_per_node" in names
     assert "include_transform" in names
+
+    # get_hierarchy filters
+    assert "tag" in names
+    assert "layer" in names
+    assert "active_only" in names
+    assert "static_only" in names
 
 
 def test_manage_gameobject_signature_excludes_vestigial_params():

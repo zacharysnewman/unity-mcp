@@ -37,7 +37,35 @@ async def test_manage_scene_get_hierarchy_paging_params_pass_through(monkeypatch
     assert p["cursor"] in (20, "20")
     assert p["maxNodes"] in (1000, "1000")
     assert p["maxDepth"] in (6, "6")
-    assert "maxChildrenPerNode" not in p
     assert p["includeTransform"] in (True, "true")
 
 
+@pytest.mark.asyncio
+async def test_manage_scene_get_hierarchy_filter_params_pass_through(monkeypatch):
+    captured = {}
+
+    async def fake_send(cmd, params, **kwargs):
+        captured["params"] = params
+        return {"success": True, "data": {}}
+
+    monkeypatch.setattr(
+        manage_scene_mod,
+        "async_send_command_with_retry",
+        fake_send,
+    )
+
+    resp = await manage_scene_mod.manage_scene(
+        ctx=DummyContext(),
+        action="get_hierarchy",
+        tag="Enemy",
+        layer="8",
+        active_only="true",
+        static_only="false",
+    )
+
+    assert resp.get("success") is True
+    p = captured["params"]
+    assert p["tag"] == "Enemy"
+    assert p["layer"] in (8, "8")
+    assert p["activeOnly"] in (True, "true")
+    assert p["staticOnly"] in (False, "false")

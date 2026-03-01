@@ -54,6 +54,12 @@ namespace MCPForUnity.Editor.Tools
             public int? maxNodes { get; set; }
             public int? maxDepth { get; set; }
             public bool? includeTransform { get; set; }
+
+            // get_hierarchy filters
+            public string tag { get; set; }
+            public int? layer { get; set; }
+            public bool? activeOnly { get; set; }
+            public bool? staticOnly { get; set; }
         }
 
         private static float[] ParseFloatArray(JToken token)
@@ -119,6 +125,12 @@ namespace MCPForUnity.Editor.Tools
                 maxNodes = ParamCoercion.CoerceIntNullable(p["maxNodes"] ?? p["max_nodes"]),
                 maxDepth = ParamCoercion.CoerceIntNullable(p["maxDepth"] ?? p["max_depth"]),
                 includeTransform = ParamCoercion.CoerceBoolNullable(p["includeTransform"] ?? p["include_transform"]),
+
+                // get_hierarchy filters
+                tag = p["tag"]?.ToString(),
+                layer = ParamCoercion.CoerceIntNullable(p["layer"]),
+                activeOnly = ParamCoercion.CoerceBoolNullable(p["activeOnly"] ?? p["active_only"]),
+                staticOnly = ParamCoercion.CoerceBoolNullable(p["staticOnly"] ?? p["static_only"]),
             };
         }
 
@@ -1277,6 +1289,12 @@ namespace MCPForUnity.Editor.Tools
                     scope = "children";
                 }
 
+                // Apply filters
+                if (!string.IsNullOrEmpty(cmd.tag)) nodes = nodes.Where(go => go.CompareTag(cmd.tag)).ToList();
+                if (cmd.layer.HasValue) nodes = nodes.Where(go => go.layer == cmd.layer.Value).ToList();
+                if (cmd.activeOnly == true) nodes = nodes.Where(go => go.activeInHierarchy).ToList();
+                if (cmd.staticOnly == true) nodes = nodes.Where(go => go.isStatic).ToList();
+
                 int total = nodes.Count;
                 if (resolvedCursor > total) resolvedCursor = total;
                 int end = Mathf.Min(total, resolvedCursor + effectiveTake);
@@ -1387,14 +1405,7 @@ namespace MCPForUnity.Editor.Tools
             {
                 { "name", go.name },
                 { "instanceID", go.GetInstanceID() },
-                { "activeSelf", go.activeSelf },
-                { "activeInHierarchy", go.activeInHierarchy },
-                { "tag", go.tag },
-                { "layer", go.layer },
-                { "isStatic", go.isStatic },
                 { "childCount", childCount },
-                { "childrenTruncated", childCount > 0 }, // We do not inline children in summary mode.
-                { "childrenCursor", childCount > 0 ? "0" : null },
             };
 
             if (includeTransform && go.transform != null)
