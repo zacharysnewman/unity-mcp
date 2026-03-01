@@ -36,11 +36,11 @@ class TestManageUIPathValidation:
     def test_create_rejects_path_outside_assets(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -56,7 +56,7 @@ class TestManageUIPathValidation:
         async def fake_send(*_args, **_kwargs):
             return {"success": True}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -73,7 +73,7 @@ class TestManageUIPathValidation:
         async def fake_send(*_args, **_kwargs):
             return {"success": True}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -88,11 +88,11 @@ class TestManageUIPathValidation:
     def test_create_accepts_uxml_extension(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Created"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -107,11 +107,11 @@ class TestManageUIPathValidation:
     def test_create_accepts_uss_extension(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Created"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -130,11 +130,11 @@ class TestManageUIContentsEncoding:
     def test_create_encodes_contents_as_base64(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Created"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -153,11 +153,11 @@ class TestManageUIContentsEncoding:
     def test_update_encodes_contents_as_base64(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Updated"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -197,11 +197,11 @@ class TestManageUIActionRouting:
     def test_create_uses_mutation_path(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, cmd, _params, **kwargs):
+        async def fake_send(_func, _instance, cmd, _params, **kwargs):
             captured["cmd"] = cmd
             return {"success": True, "message": "Created"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -215,11 +215,11 @@ class TestManageUIActionRouting:
     def test_attach_ui_document_params(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Attached"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -240,11 +240,11 @@ class TestManageUIActionRouting:
     def test_create_panel_settings_params(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Created"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(),
@@ -364,12 +364,12 @@ class TestManageUIRenderUI:
     def test_render_ui_routes_params(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Rendered",
                     "data": {"path": "Assets/Screenshots/test.png"}}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(), action="render_ui",
@@ -390,11 +390,11 @@ class TestManageUIRenderUI:
     def test_render_ui_none_excluded(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "ok"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
         run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(), action="render_ui", target="X"))
         p = captured["params"]
@@ -408,11 +408,11 @@ class TestManageUILinkStylesheet:
     def test_link_stylesheet_routes_params(self, monkeypatch):
         captured = {}
 
-        async def fake_send(_ctx, _instance, _cmd, params, **kwargs):
+        async def fake_send(_func, _instance, _cmd, params, **kwargs):
             captured["params"] = params
             return {"success": True, "message": "Linked"}
 
-        monkeypatch.setattr(manage_ui_mod, "send_mutation", fake_send)
+        monkeypatch.setattr(manage_ui_mod, "send_with_unity_instance", fake_send)
 
         resp = run_async(manage_ui_mod.manage_ui(
             ctx=DummyContext(), action="link_stylesheet",
