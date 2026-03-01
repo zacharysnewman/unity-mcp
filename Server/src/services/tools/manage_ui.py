@@ -249,22 +249,9 @@ async def manage_ui(
         params_dict["tooltip"] = tooltip
 
     # --- Route to Unity ---
-    is_mutation = action_lower in (
-        "create", "update", "delete", "attach_ui_document", "detach_ui_document",
-        "create_panel_settings", "update_panel_settings", "render_ui", "link_stylesheet", "modify_visual_element",
+    result = await send_with_unity_instance(
+        async_send_command_with_retry, unity_instance, "manage_ui", params_dict,
     )
-
-    if is_mutation:
-        result = await send_with_unity_instance(
-            async_send_command_with_retry, unity_instance, "manage_ui", params_dict,
-        )
-    else:
-        result = await send_with_unity_instance(
-            async_send_command_with_retry,
-            unity_instance,
-            "manage_ui",
-            params_dict,
-        )
 
     if isinstance(result, dict):
         # Decode base64 contents in read responses
