@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json.Linq;
@@ -51,12 +52,12 @@ namespace MCPForUnity.Editor.Tools.Animation
                 });
             }
 
-            var clips = new List<object>();
+            var allClips = new List<object>();
             if (animator.runtimeAnimatorController != null)
             {
                 foreach (var clip in animator.runtimeAnimatorController.animationClips)
                 {
-                    clips.Add(new
+                    allClips.Add(new
                     {
                         name = clip.name,
                         length = clip.length,
@@ -66,6 +67,14 @@ namespace MCPForUnity.Editor.Tools.Animation
                     });
                 }
             }
+
+            int clipsPageSize = Math.Min(Math.Max(1, @params["pageSize"]?.ToObject<int?>() ?? @params["page_size"]?.ToObject<int?>() ?? 50), 200);
+            int clipsCursor = Math.Max(0, @params["cursor"]?.ToObject<int?>() ?? 0);
+            int clipsTotal = allClips.Count;
+            if (clipsCursor > clipsTotal) clipsCursor = clipsTotal;
+            int clipsEnd = Math.Min(clipsTotal, clipsCursor + clipsPageSize);
+            var clips = allClips.GetRange(clipsCursor, clipsEnd - clipsCursor);
+            bool clipsTruncated = clipsEnd < clipsTotal;
 
             return new
             {
@@ -84,7 +93,12 @@ namespace MCPForUnity.Editor.Tools.Animation
                     layerCount = animator.layerCount,
                     parameters,
                     layers,
-                    clips
+                    clips,
+                    clipsTotal,
+                    clipsCursor,
+                    clipsPageSize,
+                    clipsNextCursor = clipsTruncated ? clipsEnd.ToString() : null,
+                    clipsTruncated,
                 }
             };
         }
