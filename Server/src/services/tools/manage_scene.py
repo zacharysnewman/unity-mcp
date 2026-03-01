@@ -146,6 +146,15 @@ async def manage_scene(
                          "Accepted for forward-compatibility; current paging returns a single level."] | None = None,
     include_transform: Annotated[bool | str,
                                  "If true, include local transform in node summaries."] | None = None,
+    # --- get_hierarchy filters ---
+    tag: Annotated[str,
+                   "Filter hierarchy nodes by Unity tag (e.g. 'Player', 'Enemy'). Only nodes with this tag are returned."] | None = None,
+    layer: Annotated[int | str,
+                     "Filter hierarchy nodes by Unity layer index. Only nodes on this layer are returned."] | None = None,
+    active_only: Annotated[bool | str,
+                           "If true, return only nodes that are active in the hierarchy."] | None = None,
+    static_only: Annotated[bool | str,
+                           "If true, return only nodes marked as static."] | None = None,
 ) -> dict[str, Any] | ToolResult:
     unity_instance = get_unity_instance_from_context(ctx)
     gate = await preflight(ctx, wait_for_no_compile=True, refresh_if_dirty=True)
@@ -158,10 +167,12 @@ async def manage_scene(
         coerced_cursor = coerce_int(cursor, default=None)
         coerced_max_nodes = coerce_int(max_nodes, default=None)
         coerced_max_depth = coerce_int(max_depth, default=None)
-        coerced_include_transform = coerce_bool(
-            include_transform, default=None)
+        coerced_include_transform = coerce_bool(include_transform, default=None)
         coerced_include_image = coerce_bool(include_image, default=None)
         coerced_max_resolution = coerce_int(max_resolution, default=None)
+        coerced_layer = coerce_int(layer, default=None)
+        coerced_active_only = coerce_bool(active_only, default=None)
+        coerced_static_only = coerce_bool(static_only, default=None)
         if coerced_max_resolution is not None and coerced_max_resolution <= 0:
             return {"success": False, "message": "max_resolution must be a positive integer greater than zero."}
 
@@ -244,6 +255,16 @@ async def manage_scene(
             params["maxDepth"] = coerced_max_depth
         if coerced_include_transform is not None:
             params["includeTransform"] = coerced_include_transform
+
+        # get_hierarchy filters (optional)
+        if tag is not None:
+            params["tag"] = tag
+        if coerced_layer is not None:
+            params["layer"] = coerced_layer
+        if coerced_active_only is not None:
+            params["activeOnly"] = coerced_active_only
+        if coerced_static_only is not None:
+            params["staticOnly"] = coerced_static_only
 
         # Use centralized retry helper with instance routing
         response = await send_with_unity_instance(async_send_command_with_retry, unity_instance, "manage_scene", params)

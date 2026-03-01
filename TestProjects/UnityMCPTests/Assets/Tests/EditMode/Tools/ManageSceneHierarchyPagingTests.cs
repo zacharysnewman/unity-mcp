@@ -27,6 +27,141 @@ namespace MCPForUnityTests.Editor.Tools
         }
 
         [Test]
+        public void GetHierarchy_NodeSummary_ContainsNameInstanceIDChildCount()
+        {
+            var go = new GameObject("HS_SummaryTest");
+            go.AddComponent<UnityEngine.BoxCollider>();
+            _created.Add(go);
+            var child = new GameObject("HS_SummaryChild");
+            child.transform.SetParent(go.transform);
+
+            var p = new JObject
+            {
+                ["action"] = "get_hierarchy",
+                ["pageSize"] = 100,
+            };
+            var raw = ManageScene.HandleCommand(p);
+            var res = raw as JObject ?? JObject.FromObject(raw);
+            Assert.IsTrue(res.Value<bool>("success"), res.ToString());
+
+            var items = res["data"]["items"] as JArray;
+            Assert.IsNotNull(items);
+
+            JObject node = null;
+            foreach (JObject item in items)
+            {
+                if (item.Value<string>("name") == "HS_SummaryTest")
+                {
+                    node = item;
+                    break;
+                }
+            }
+            Assert.IsNotNull(node, "Expected to find HS_SummaryTest in hierarchy items.");
+            Assert.IsNotNull(node["instanceID"], "Expected instanceID field.");
+            Assert.AreEqual(1, node.Value<int>("childCount"), "Expected childCount=1.");
+            // Slimmed-down payload must NOT include legacy fields
+            Assert.IsNull(node["activeSelf"], "activeSelf should not be in slim payload.");
+            Assert.IsNull(node["tag"], "tag should not be in slim payload.");
+            Assert.IsNull(node["layer"], "layer should not be in slim payload.");
+            Assert.IsNull(node["isStatic"], "isStatic should not be in slim payload.");
+            Assert.IsNull(node["childrenTruncated"], "childrenTruncated should not be in slim payload.");
+            Assert.IsNull(node["childrenCursor"], "childrenCursor should not be in slim payload.");
+        }
+
+        [Test]
+        public void GetHierarchy_FilterByTag_ReturnsOnlyMatchingNodes()
+        {
+            var tagged = new GameObject("HS_Tagged");
+            tagged.tag = "Respawn";
+            _created.Add(tagged);
+
+            var untagged = new GameObject("HS_Untagged");
+            _created.Add(untagged);
+
+            var p = new JObject
+            {
+                ["action"] = "get_hierarchy",
+                ["tag"] = "Respawn",
+                ["pageSize"] = 100,
+            };
+            var raw = ManageScene.HandleCommand(p);
+            var res = raw as JObject ?? JObject.FromObject(raw);
+            Assert.IsTrue(res.Value<bool>("success"), res.ToString());
+
+            var items = res["data"]["items"] as JArray;
+            Assert.IsNotNull(items);
+            foreach (JObject item in items)
+            {
+                Assert.AreNotEqual("HS_Untagged", item.Value<string>("name"),
+                    "Untagged object should not appear when filtering by tag.");
+            }
+            Assert.IsTrue(items.Any(i => i.Value<string>("name") == "HS_Tagged"),
+                "Tagged object must appear in filtered results.");
+        }
+
+        [Test]
+        public void GetHierarchy_FilterByLayer_ReturnsOnlyMatchingNodes()
+        {
+            int testLayer = 8; // "PostProcessing" or any layer index present in the project
+            var onLayer = new GameObject("HS_OnLayer8");
+            onLayer.layer = testLayer;
+            _created.Add(onLayer);
+
+            var otherLayer = new GameObject("HS_OnLayer0");
+            otherLayer.layer = 0;
+            _created.Add(otherLayer);
+
+            var p = new JObject
+            {
+                ["action"] = "get_hierarchy",
+                ["layer"] = testLayer,
+                ["pageSize"] = 100,
+            };
+            var raw = ManageScene.HandleCommand(p);
+            var res = raw as JObject ?? JObject.FromObject(raw);
+            Assert.IsTrue(res.Value<bool>("success"), res.ToString());
+
+            var items = res["data"]["items"] as JArray;
+            Assert.IsNotNull(items);
+            foreach (JObject item in items)
+            {
+                Assert.AreNotEqual("HS_OnLayer0", item.Value<string>("name"),
+                    "Layer 0 object should not appear when filtering by layer 8.");
+            }
+            Assert.IsTrue(items.Any(i => i.Value<string>("name") == "HS_OnLayer8"),
+                "Layer 8 object must appear in filtered results.");
+        }
+
+        [Test]
+        public void GetHierarchy_FilterActiveOnly_ExcludesInactiveNodes()
+        {
+            var active = new GameObject("HS_Active");
+            _created.Add(active);
+
+            var inactive = new GameObject("HS_Inactive");
+            inactive.SetActive(false);
+            _created.Add(inactive);
+
+            var p = new JObject
+            {
+                ["action"] = "get_hierarchy",
+                ["activeOnly"] = true,
+                ["pageSize"] = 100,
+            };
+            var raw = ManageScene.HandleCommand(p);
+            var res = raw as JObject ?? JObject.FromObject(raw);
+            Assert.IsTrue(res.Value<bool>("success"), res.ToString());
+
+            var items = res["data"]["items"] as JArray;
+            Assert.IsNotNull(items);
+            foreach (JObject item in items)
+            {
+                Assert.AreNotEqual("HS_Inactive", item.Value<string>("name"),
+                    "Inactive object should not appear when active_only=true.");
+            }
+        }
+
+        [Test]
         public void GetHierarchy_PaginatesRoots_AndSupportsChildrenPaging()
         {
             // Arrange: create many roots so paging must occur.

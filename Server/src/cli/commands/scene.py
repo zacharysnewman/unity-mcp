@@ -48,6 +48,27 @@ def scene():
     type=int,
     help="Pagination cursor."
 )
+@click.option(
+    "--tag",
+    default=None,
+    help="Filter by Unity tag (e.g. 'Player', 'Enemy')."
+)
+@click.option(
+    "--layer",
+    default=None,
+    type=int,
+    help="Filter by Unity layer index."
+)
+@click.option(
+    "--active-only", "-a",
+    is_flag=True,
+    help="Return only nodes active in the hierarchy."
+)
+@click.option(
+    "--static-only",
+    is_flag=True,
+    help="Return only nodes marked as static."
+)
 @handle_unity_errors
 def hierarchy(
     parent: Optional[str],
@@ -55,6 +76,10 @@ def hierarchy(
     include_transform: bool,
     limit: int,
     cursor: int,
+    tag: Optional[str],
+    layer: Optional[int],
+    active_only: bool,
+    static_only: bool,
 ):
     """Get the scene hierarchy.
 
@@ -79,6 +104,14 @@ def hierarchy(
         params["maxDepth"] = max_depth
     if include_transform:
         params["includeTransform"] = True
+    if tag:
+        params["tag"] = tag
+    if layer is not None:
+        params["layer"] = layer
+    if active_only:
+        params["activeOnly"] = True
+    if static_only:
+        params["staticOnly"] = True
 
     result = run_command("manage_scene", params, config)
     click.echo(format_output(result, config.format))
