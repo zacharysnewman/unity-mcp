@@ -132,6 +132,66 @@ namespace MCPForUnityTests.Editor.Tools
                 Assert.AreEqual("AnimTest_WithAnimator", data["gameObject"].ToString());
                 Assert.IsNotNull(data["enabled"]);
                 Assert.IsNotNull(data["speed"]);
+                // Pagination fields must be present
+                Assert.IsNotNull(data["clipsTotal"], "Expected clipsTotal in response");
+                Assert.IsNotNull(data["clipsTruncated"], "Expected clipsTruncated in response");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(go);
+            }
+        }
+
+        [Test]
+        public void AnimatorGetInfo_ClipsPagination_ReturnsPagedClips()
+        {
+            // Build a controller with 3 clips so we can paginate them
+            var controllerPath = $"{TempRoot}/AnimTest_ClipPaging.controller";
+            var controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(controllerPath);
+
+            for (int i = 0; i < 3; i++)
+            {
+                var clip = new AnimationClip { name = $"Clip{i}" };
+                AssetDatabase.AddObjectToAsset(clip, controllerPath);
+                controller.AddMotion(clip);
+            }
+            AssetDatabase.SaveAssets();
+
+            var go = new GameObject("AnimTest_ClipPaging");
+            var animator = go.AddComponent<Animator>();
+            animator.runtimeAnimatorController = controller;
+
+            try
+            {
+                // Page 1: page_size=2, cursor=0
+                var p1 = ToJObject(ManageAnimation.HandleCommand(new JObject
+                {
+                    ["action"] = "animator_get_info",
+                    ["target"] = "AnimTest_ClipPaging",
+                    ["pageSize"] = 2,
+                    ["cursor"] = 0,
+                }));
+                Assert.IsTrue(p1.Value<bool>("success"), p1.ToString());
+                var d1 = p1["data"] as JObject;
+                Assert.IsNotNull(d1);
+                Assert.AreEqual(3, d1.Value<int>("clipsTotal"), "Expected 3 total clips");
+                Assert.AreEqual(2, ((JArray)d1["clips"]).Count, "Expected 2 clips on page 1");
+                Assert.IsTrue(d1.Value<bool>("clipsTruncated"), "Expected clipsTruncated=true on page 1");
+                Assert.IsNotNull(d1["clipsNextCursor"], "Expected clipsNextCursor on page 1");
+
+                // Page 2: cursor from next_cursor
+                int nextCursor = int.Parse(d1["clipsNextCursor"].ToString());
+                var p2 = ToJObject(ManageAnimation.HandleCommand(new JObject
+                {
+                    ["action"] = "animator_get_info",
+                    ["target"] = "AnimTest_ClipPaging",
+                    ["pageSize"] = 2,
+                    ["cursor"] = nextCursor,
+                }));
+                Assert.IsTrue(p2.Value<bool>("success"), p2.ToString());
+                var d2 = p2["data"] as JObject;
+                Assert.AreEqual(1, ((JArray)d2["clips"]).Count, "Expected 1 clip on page 2");
+                Assert.IsFalse(d2.Value<bool>("clipsTruncated"), "Expected clipsTruncated=false on final page");
             }
             finally
             {

@@ -22,6 +22,8 @@ namespace MCPForUnity.Editor.Resources.MenuItems
         {
             bool forceRefresh = @params?["refresh"]?.ToObject<bool>() ?? false;
             string search = @params?["search"]?.ToString();
+            int pageSize = Math.Min(Math.Max(1, @params?["pageSize"]?.ToObject<int?>() ?? @params?["page_size"]?.ToObject<int?>() ?? 50), 500);
+            int cursor = Math.Max(0, @params?["cursor"]?.ToObject<int?>() ?? 0);
 
             var items = GetMenuItemsInternal(forceRefresh);
 
@@ -32,8 +34,25 @@ namespace MCPForUnity.Editor.Resources.MenuItems
                     .ToList();
             }
 
-            string message = $"Retrieved {items.Count} menu items";
-            return new SuccessResponse(message, items);
+            int total = items.Count;
+            if (cursor > total) cursor = total;
+            int end = Math.Min(total, cursor + pageSize);
+            var page = items.GetRange(cursor, end - cursor);
+            bool truncated = end < total;
+            string nextCursor = truncated ? end.ToString() : null;
+
+            string message = truncated
+                ? $"Retrieved {page.Count} of {total} menu items (cursor={cursor})."
+                : $"Retrieved {page.Count} menu items.";
+            return new SuccessResponse(message, new
+            {
+                items = page,
+                total = total,
+                cursor = cursor,
+                pageSize = pageSize,
+                next_cursor = nextCursor,
+                truncated = truncated,
+            });
         }
 
         internal static List<string> GetMenuItemsInternal(bool forceRefresh)
