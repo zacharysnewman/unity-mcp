@@ -111,9 +111,8 @@ manage_script(
     path="Assets/Scripts/MyScript.cs",
     contents="using UnityEngine;\n\npublic class MyScript : MonoBehaviour { ... }"
 )
-# Then refresh and check console
+# Then refresh — first_errors in response shows compile errors
 refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
-read_console(types=["error"], count=10)
 ```
 
 ---
@@ -226,16 +225,10 @@ public class EnemyAI : MonoBehaviour
 }'''
 )
 
-# 2. CRITICAL: Refresh and compile
-refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
+# 2. CRITICAL: Refresh and compile — first_errors in response shows compile errors
+result = refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
 
-# 3. Check for errors
-console = read_console(types=["error"], count=10)
-if console["messages"]:
-    # Handle compilation errors
-    print("Compilation errors:", console["messages"])
-else:
-    # 4. Attach to GameObject
+# 3. Attach to GameObject (only if result.data.first_errors is empty)
     manage_gameobject(action="modify", target="Enemy", components_to_add=["EnemyAI"])
     
     # 5. Set component properties
@@ -283,11 +276,8 @@ validate_script(
     level="standard"
 )
 
-# 5. Refresh
+# 5. Refresh — first_errors in response shows compile errors
 refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
-
-# 6. Check console
-read_console(types=["error"], count=10)
 ```
 
 ### Add Method to Existing Class
@@ -512,9 +502,8 @@ for error in errors["messages"]:
     # Use find_in_file to locate the problematic code
     pass
 
-# 3. After fixing, refresh and check again
+# 3. After fixing, refresh and check again — first_errors in response shows remaining errors
 refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
-read_console(types=["error"], count=10)
 ```
 
 ### Investigate Missing References
@@ -1532,12 +1521,7 @@ errors = read_console(types=["error"], count=20)
 # 2. Fix the script errors
 # ... edit scripts ...
 
-# 3. Force refresh
-refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
-
-# 4. Verify clean console
-errors = read_console(types=["error"], count=5)
-if not errors["messages"]:
-    # Safe to proceed with tools
-    pass
+# 3. Force refresh — first_errors in response; empty means clean compile
+result = refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
+# if not result.data.first_errors: safe to proceed with tools
 ```

@@ -24,20 +24,21 @@ Before applying a template:
 2. Understand the scene   → mcpforunity://scene/gameobject-api
 3. Find what you need     → find_gameobjects or resources
 4. Take action            → tools (manage_gameobject, create_script, script_apply_edits, apply_text_edits, validate_script, delete_script, get_sha, etc.)
-5. Verify results         → read_console, capture_screenshot (in manage_scene), resources
+5. Verify results         → refresh_unity response (first_errors), read_console, capture_screenshot (in manage_scene), resources
 ```
 
 ## Critical Best Practices
 
-### 1. After Writing/Editing Scripts: Always Refresh and Check Console
+### 1. After Writing/Editing Scripts: Refresh and Validate
 
 ```python
 # After create_script or script_apply_edits:
-refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
-read_console(types=["error"], count=10, include_stacktrace=True)
+result = refresh_unity(mode="force", scope="scripts", compile="request", wait_for_ready=True)
+# result.data.first_errors contains up to 3 unique errors — no separate read_console needed
+# If there are errors and you need a stack trace: mcpforunity://console/log/{id}
 ```
 
-**Why:** Unity must compile scripts before they're usable. Compilation errors block all tool execution.
+**Why:** Unity must compile scripts before they're usable. Compilation errors block all tool execution. `refresh_unity` now returns `first_errors` directly when idle, saving a round-trip.
 
 ### 2. Use `batch_execute` for Multiple Operations
 
