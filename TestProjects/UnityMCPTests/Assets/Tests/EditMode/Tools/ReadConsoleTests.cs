@@ -155,6 +155,66 @@ namespace MCPForUnityTests.Editor.Tools
         }
 
         [Test]
+        public void GetFirstErrors_ReturnsEarliestErrors()
+        {
+            ReadConsole.HandleCommand(new JObject { ["action"] = "clear" });
+            Debug.LogError($"First {Guid.NewGuid()}");
+            Debug.LogError($"Second {Guid.NewGuid()}");
+            Debug.LogError($"Third {Guid.NewGuid()}");
+
+            var errors = ReadConsole.GetFirstErrors(10);
+            Assert.AreEqual(3, errors.Count);
+            foreach (var e in errors)
+            {
+                var entry = JObject.FromObject(e);
+                Assert.IsNotNull(entry["id"]);
+                Assert.IsNotNull(entry["type"]);
+                Assert.IsNotNull(entry["message"]);
+                Assert.IsTrue(entry["occurrenceCount"]?.Value<int>() >= 1);
+            }
+        }
+
+        [Test]
+        public void GetFirstErrors_CapsAtMaxCount()
+        {
+            ReadConsole.HandleCommand(new JObject { ["action"] = "clear" });
+            for (int i = 0; i < 5; i++)
+                Debug.LogError($"Error {i} {Guid.NewGuid()}");
+
+            var errors = ReadConsole.GetFirstErrors(3);
+            Assert.AreEqual(3, errors.Count);
+        }
+
+        [Test]
+        public void GetFirstErrors_DeduplicatesAndCountsOccurrences()
+        {
+            ReadConsole.HandleCommand(new JObject { ["action"] = "clear" });
+            string msg = $"Repeated {Guid.NewGuid()}";
+            Debug.LogError(msg);
+            Debug.LogError(msg);
+            Debug.LogError(msg);
+
+            var errors = ReadConsole.GetFirstErrors(10);
+            Assert.AreEqual(1, errors.Count);
+            var entry = JObject.FromObject(errors[0]);
+            Assert.AreEqual(3, entry["occurrenceCount"]?.Value<int>());
+        }
+
+        [Test]
+        public void GetFirstErrors_ExcludesWarningsAndLogs()
+        {
+            ReadConsole.HandleCommand(new JObject { ["action"] = "clear" });
+            Debug.Log($"Log {Guid.NewGuid()}");
+            Debug.LogWarning($"Warning {Guid.NewGuid()}");
+            Debug.LogError($"Error {Guid.NewGuid()}");
+
+            var errors = ReadConsole.GetFirstErrors(10);
+            Assert.AreEqual(1, errors.Count);
+            var entry = JObject.FromObject(errors[0]);
+            Assert.AreEqual("Error", entry["type"]?.ToString());
+        }
+
+        [Test]
         public void HandleCommand_Get_EntryHasStableId()
         {
             ReadConsole.HandleCommand(new JObject { ["action"] = "clear" });

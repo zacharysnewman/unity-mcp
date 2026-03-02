@@ -113,11 +113,14 @@ namespace MCPForUnity.Editor.Tools
                 ? "compiling"
                 : (EditorApplication.isUpdating ? "asset_import" : "idle");
 
+            var firstErrors = resultingState == "idle" ? ReadConsole.GetFirstErrors(3) : null;
+
             return new SuccessResponse("Refresh requested.", new
             {
                 refresh_triggered = refreshTriggered,
                 compile_requested = compileRequested,
                 resulting_state = resultingState,
+                first_errors = firstErrors,
                 hint = shouldWaitForReady
                     ? "Unity refresh completed; editor should be ready."
                     : "If Unity enters compilation/domain reload, poll editor_state until ready_for_tools is true."

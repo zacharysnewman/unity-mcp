@@ -203,6 +203,79 @@ namespace MCPForUnity.Editor.Tools
             });
         }
 
+        /// <summary>
+        /// Returns the first N unique errors in the order they appeared.
+        /// Used by RefreshUnity to embed a quick error snapshot in its response.
+        /// Occurrence counts reflect all duplicates seen, but only the first maxCount
+        /// unique errors are included.
+        /// </summary>
+        internal static List<object> GetFirstErrors(int maxCount)
+        {
+            if (!AreReflectionMembersInitialized() || maxCount <= 0)
+                return new List<object>();
+
+            Type logEntryType = typeof(EditorApplication).Assembly.GetType("UnityEditor.LogEntry");
+            if (logEntryType == null) return new List<object>();
+            object logEntryInstance = Activator.CreateInstance(logEntryType);
+
+            var entryById = new Dictionary<string, (string typeName, string message, int count)>();
+            var entryOrder = new List<string>();
+
+            try
+            {
+                _startGettingEntriesMethod.Invoke(null, null);
+                int total = (int)_getCountMethod.Invoke(null, null);
+
+                for (int i = 0; i < total; i++)
+                {
+                    _getEntryMethod.Invoke(null, new object[] { i, logEntryInstance });
+                    string message = (string)_messageField.GetValue(logEntryInstance);
+                    if (string.IsNullOrEmpty(message)) continue;
+
+                    int mode = (int)_modeField.GetValue(logEntryInstance);
+                    LogType unityType = InferTypeFromMessage(message);
+                    if (!IsExplicitDebugLog(message) && unityType == LogType.Log)
+                        unityType = GetLogTypeFromMode(mode);
+
+                    bool isError = unityType == LogType.Error
+                        || unityType == LogType.Exception
+                        || unityType == LogType.Assert;
+                    if (!isError) continue;
+
+                    string firstLine = GetFirstLine(message);
+                    string id = ComputeLogId(firstLine);
+
+                    if (entryById.ContainsKey(id))
+                    {
+                        var existing = entryById[id];
+                        entryById[id] = (existing.typeName, existing.message, existing.count + 1);
+                    }
+                    else if (entryOrder.Count < maxCount)
+                    {
+                        entryById[id] = (unityType.ToString(), firstLine, 1);
+                        entryOrder.Add(id);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                McpLog.Error($"[ReadConsole] Error in GetFirstErrors: {e}");
+            }
+            finally
+            {
+                try { _endGettingEntriesMethod.Invoke(null, null); }
+                catch (Exception e) { McpLog.Error($"[ReadConsole] Failed to call EndGettingEntries: {e}"); }
+            }
+
+            return entryOrder.Select(id => (object)new
+            {
+                id = id,
+                type = entryById[id].typeName,
+                message = entryById[id].message,
+                occurrenceCount = entryById[id].count
+            }).ToList();
+        }
+
         // --- Action Implementations ---
 
         private static object ClearConsole()
