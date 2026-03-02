@@ -80,7 +80,7 @@ set_active_instance(
 
 ### refresh_unity
 
-Refresh asset database and trigger script compilation.
+Refresh asset database and trigger script compilation. The primary way to validate code changes.
 
 ```python
 refresh_unity(
@@ -90,6 +90,8 @@ refresh_unity(
     wait_for_ready=True          # bool - wait until editor ready
 )
 ```
+
+When `compile="request"` and `wait_for_ready=True`, the response includes `first_errors` (up to 3 unique errors) when the editor reaches `idle`. Use `mcpforunity://console/log/{id}` for stack traces on specific errors. Only call `read_console` separately if you need more than 3 errors or want warnings/logs.
 
 ---
 

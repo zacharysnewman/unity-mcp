@@ -89,7 +89,7 @@ def is_connection_lost_after_send(resp: Any) -> bool:
 
 
 @mcp_for_unity_tool(
-    description="Request a Unity asset database refresh and optionally a script compilation. Can optionally wait for readiness.",
+    description="Refresh the Unity asset database and optionally trigger script compilation. When compile='request' and wait_for_ready=True, the response includes first_errors (up to 3 unique errors) once the editor is idle — no separate read_console call needed to check for compile errors.",
     annotations=ToolAnnotations(
         title="Refresh Unity",
         destructiveHint=True,
