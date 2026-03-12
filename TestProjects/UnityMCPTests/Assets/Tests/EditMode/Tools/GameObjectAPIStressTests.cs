@@ -333,8 +333,8 @@ namespace MCPForUnityTests.Editor.Tools
 
             var rb = go.GetComponent<Rigidbody>();
             Assert.AreEqual(10.5f, rb.mass, 0.01f);
-            Assert.AreEqual(0.5f, rb.drag, 0.01f);
-            Assert.AreEqual(0.1f, rb.angularDrag, 0.01f);
+            Assert.AreEqual(0.5f, rb.linearDamping, 0.01f);
+            Assert.AreEqual(0.1f, rb.angularDamping, 0.01f);
             Assert.IsFalse(rb.useGravity);
             Assert.IsTrue(rb.isKinematic);
         }
@@ -465,7 +465,7 @@ namespace MCPForUnityTests.Editor.Tools
 
             var rb = go.AddComponent<Rigidbody>();
             rb.mass = 5.5f;
-            rb.drag = 1.2f;
+            rb.linearDamping = 1.2f;
 
             var col = go.AddComponent<BoxCollider>();
             col.size = new Vector3(2, 3, 4);

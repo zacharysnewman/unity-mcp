@@ -32,8 +32,13 @@ coverage.xml
 # Unity Editor
 *.unitypackage
 *.asset
-LICENSE.meta
-CONTRIBUTING.md.meta
+*.asset.meta
+*.meta
+!MCPForUnity/**/*.meta
+!MCPForUnity/*.meta
+!TestProjects/*/Assets/**/*.meta
+!TestProjects/*/Assets/*.meta
+!TestProjects/*/Packages/*/**.meta
 
 # IDE
 .idea/
