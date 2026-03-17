@@ -1,3 +1,4 @@
+#if USE_ROSLYN
 // RoslynRuntimeCompiler.cs
 // Single-file Unity tool for Editor+PlayMode dynamic C# compilation using Roslyn.
 // Features:
@@ -1208,3 +1209,4 @@ public class RoslynRuntimeCompilerWindow : EditorWindow
     }
 }
 #endif
+#endif // USE_ROSLYN

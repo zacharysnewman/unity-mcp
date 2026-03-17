@@ -59,16 +59,18 @@ namespace MCPForUnity.Editor.Tools
                     return GetAssemblyTypes(@params);
                 
                 case "execute_with_roslyn":
-                    return ExecuteWithRoslyn(@params);
-                
                 case "get_history":
-                    return GetCompilationHistory();
-                
                 case "save_history":
-                    return SaveCompilationHistory();
-                
                 case "clear_history":
+#if !USE_ROSLYN
+                    return new ErrorResponse(
+                        "Runtime compilation requires Roslyn. Please install Microsoft.CodeAnalysis.CSharp NuGet package and add USE_ROSLYN to Scripting Define Symbols.");
+#else
+                    if (action == "execute_with_roslyn") return ExecuteWithRoslyn(@params);
+                    if (action == "get_history") return GetCompilationHistory();
+                    if (action == "save_history") return SaveCompilationHistory();
                     return ClearCompilationHistory();
+#endif
                 
                 default:
                     return new ErrorResponse($"Unknown action '{action}'. Valid actions: compile_and_load, list_loaded, get_types, execute_with_roslyn, get_history, save_history, clear_history");
@@ -281,6 +283,7 @@ namespace MCPForUnity.Editor.Tools
             });
         }
         
+#if USE_ROSLYN
         /// <summary>
         /// Execute code using RoslynRuntimeCompiler with full GUI tool integration
         /// Supports MonoBehaviours, static methods, and coroutines
@@ -439,8 +442,7 @@ namespace MCPForUnity.Editor.Tools
                 return new ErrorResponse($"Failed to clear history: {ex.Message}");
             }
         }
-        
-#if USE_ROSLYN
+
         private static List<MetadataReference> GetDefaultReferences()
         {
             var references = new List<MetadataReference>();
@@ -475,8 +477,26 @@ namespace MCPForUnity.Editor.Tools
             
             return references;
         }
+
+        private static RoslynRuntimeCompiler GetOrCreateRoslynCompiler()
+        {
+            var existing = UnityEngine.Object.FindFirstObjectByType<RoslynRuntimeCompiler>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            var go = new GameObject("MCPRoslynCompiler");
+            var compiler = go.AddComponent<RoslynRuntimeCompiler>();
+            compiler.enableHistory = true;
+            if (!Application.isPlaying)
+            {
+                go.hideFlags = HideFlags.HideAndDontSave;
+            }
+            return compiler;
+        }
 #endif
-        
+
         private static GameObject FindGameObjectByPath(string path)
         {
             // Handle hierarchical paths like "Canvas/Panel/Button"
@@ -501,28 +521,6 @@ namespace MCPForUnity.Editor.Tools
             }
             
             return current;
-        }
-
-        /// <summary>
-        /// Get or create a RoslynRuntimeCompiler instance for GUI integration
-        /// This allows MCP commands to leverage the existing GUI tool
-        /// </summary>
-        private static RoslynRuntimeCompiler GetOrCreateRoslynCompiler()
-        {
-            var existing = UnityEngine.Object.FindFirstObjectByType<RoslynRuntimeCompiler>();
-            if (existing != null)
-            {
-                return existing;
-            }
-            
-            var go = new GameObject("MCPRoslynCompiler");
-            var compiler = go.AddComponent<RoslynRuntimeCompiler>();
-            compiler.enableHistory = true; // Enable history tracking for MCP operations
-            if (!Application.isPlaying)
-            {
-                go.hideFlags = HideFlags.HideAndDontSave;
-            }
-            return compiler;
         }
     }
 }
